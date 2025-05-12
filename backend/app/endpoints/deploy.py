@@ -1,31 +1,21 @@
 from fastapi import HTTPException
 from app.models import DeployRequest
-from app.services import GithubService, YamlGenerator
+from app.services import GithubService
 
 def deploy_app(request: DeployRequest):
     github_service = GithubService()
-    yaml_generator = YamlGenerator()
 
     try:
-        repo_url = github_service.create_repo_from_template(request.app_name)
-        print(f"New repo created: {repo_url}")  
-        github_service.import_user_repo(repo_url, request.user_repo_url)
+        new_repo_name = github_service.create_repo_from_template(request.app_name, request.username)
+        print(f"New repo created: {new_repo_name}")  
+        github_service.wait_for_workflow(new_repo_name, "import_user_repo.yml")
+        github_service.trigger_import_workflow(new_repo_name, request.user_repo_url,"import_user_repo.yml")
+        github_service.create_github_webhook(request.user_repo_url, request.username,new_repo_name)
 
-        yaml_str = yaml_generator.generate(
-            app_name=request.app_name,
-            language=request.language,
-            has_dockerfile=request.has_dockerfile
-        )
-
-        github_service.push_file_to_repo(
-            repo_name=request.app_name,
-            file_path="k8s/deployment.yaml",
-            content=yaml_str
-        )
 
         return {
             "status": "success",
-            "repo_url": repo_url
+            "repo_name": new_repo_name
         }
 
     except Exception as e:
