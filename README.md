@@ -247,6 +247,76 @@ jobs:
         run: docker push $IMAGE_NAME:$COMMIT_SHA
 ```
 
+
+
+### ⚙️ deploy-to-aks Workflow
+
+`.github/workflows/deploy-to-aks.yml`
+
+```yaml
+name: Connect to Azure AKS with Username and Password
+
+on:
+  workflow_run:
+    workflows: ["Build & Deploy"]
+    types:
+      - completed
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  connect-to-aks:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Log in to Azure with Username and Password
+      run: |
+        az login --username ${{ secrets.AZURE_USERNAME }} --password ${{ secrets.AZURE_PASSWORD }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+    - name: Set up Azure CLI
+      run: az account show
+
+    - name: Get AKS credentials
+      run: |
+        az aks get-credentials --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} --name ${{ secrets.AZURE_AKS_CLUSTER_NAME }}
+
+    - name: Verify Connection to AKS
+      run: |
+        kubectl get nodes
+        kubectl get deployments --all-namespaces=true
+
+    - name: Set APP_NAME from repo name
+      run: |
+        FULL_NAME=$(basename "${GITHUB_REPOSITORY}")
+        APP_NAME=$(echo "$FULL_NAME" | sed -E 's/^user-(.*)-deployed$/\1/')
+        echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
+
+    - name: Update placeholders in manifests/application.yaml
+      run: |
+          sed -i -e "s|{{APP_NAME}}|${{ env.APP_NAME }}|" \
+                 -e "s|{{REPO_URL}}|https://github.com/${{ github.repository }}|" \
+                 -e "s|{{REPO_PATH}}|manifests|" \
+                 -e "s|{{DEST_NAMESPACE}}|${{ env.APP_NAME }}|" \
+                 manifests/application.yaml
+    - name: Update placeholders in manifests/ingress.yaml
+      run: |
+          sed -i -e "s|{{APP_NAME}}|${{ env.APP_NAME }}|"  manifests/ingress.yaml
+    - name: Commit and push updated manifest
+      run: |
+        git config --global user.email "actions@github.com"
+        git config --global user.name "GitHub Actions"
+        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+        git add manifests/application.yaml
+        git add manifests/ingress.yaml
+        git commit -m "Update application and ingress with deployment values"
+        git push
+    - name: Deploy ArgoCD Application
+      run: kubectl apply -f manifests/application.yaml -n argocd
+```
 ---
 
 ## 🛡️ Setup ArgoCD in Minikube Cluster (Option 1)
@@ -390,6 +460,53 @@ Ensure the following prerequisites are met before getting started:
     - protocol: TCP
       port: 80
       targetPort: 5000
+  ```
+
+  - **Application.yaml**
+  ```yaml
+  apiVersion: argoproj.io/v1alpha1
+   kind: Application
+   metadata:
+     name: {{APP_NAME}}
+     namespace: argocd
+   spec:
+     project: default
+     source:
+       repoURL: {{REPO_URL}}
+       targetRevision: HEAD
+       path: {{REPO_PATH}}
+     destination:
+       server: https://kubernetes.default.svc
+       namespace: {{DEST_NAMESPACE}}
+     syncPolicy:
+       automated:
+         prune: true
+         selfHeal: true
+       syncOptions:
+         - CreateNamespace=true
+  ```
+  - **ingress.yaml**
+  ```yaml
+   apiVersion: networking.k8s.io/v1
+   kind: Ingress
+   metadata:
+     name: {{APP_NAME}}-ingress
+     namespace: {{APP_NAME}}
+     annotations:
+       nginx.ingress.kubernetes.io/rewrite-target: /
+   spec:
+     ingressClassName: nginx
+     rules:
+     - host: {{APP_NAME}}.eastus.cloudapp.azure.com
+       http:
+         paths:
+         - path: /
+           pathType: Prefix
+           backend:
+             service:
+               name: {{APP_NAME}}-service
+               port:
+                 number: 5000
   ```
 
 ---
