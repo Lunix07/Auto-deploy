@@ -1,4 +1,4 @@
-import { DataGridPro, GridColDef } from '@mui/x-data-grid-pro';
+import { DataGrid, GridColDef } from '@mui/x-data-grid'; // ✅ Changed from DataGridPro
 import { Box, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from 'react-router-dom';
@@ -9,24 +9,21 @@ const columns: GridColDef[] = [
   { field: 'github_url', headerName: 'GitHub URL', width: 500 },
 ];
 
+interface MainGridProps {
+  projects: { title: string; github_url: string; _id?: string }[];
+}
 
-
-export default function MainGrid() {
+export default function MainGrid({ projects }: MainGridProps) {
   const navigate = useNavigate();
-  const [rows, setRows] = React.useState<any[]>([]);
 
-  // ✅ Load data from localStorage on mount
-  React.useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('projects') || '[]');
-    const rowsWithId = stored.map((row: any, index: number) => ({
-      id: index + 1,
-      ...row,
-    }));
-    setRows(rowsWithId);
-  }, []);
+  const rows = projects.map((p, index) => ({
+    id: p._id || index,
+    title: p.title,
+    github_url: p.github_url,
+  }));
 
   return (
-    <Box sx={{ height: 600, width: '100%', backgroundColor: 'background.paper', p: 2,  }}>
+    <Box sx={{ height: 600, width: '100%', backgroundColor: 'background.paper', p: 2 }}>
       {/* ✅ Top-right aligned button */}
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
         <Button
@@ -38,7 +35,7 @@ export default function MainGrid() {
         </Button>
       </Box>
 
-      <DataGridPro
+      <DataGrid
         rows={rows}
         columns={columns}
         sx={{
@@ -48,7 +45,6 @@ export default function MainGrid() {
             fontWeight: 600,
             borderBottom: '1px solid #555',
           },
-          
         }}
         disableRowSelectionOnClick
       />

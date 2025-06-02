@@ -17,8 +17,7 @@ import AppTheme from '../../shared-theme/AppTheme';
 import ColorModeSelect from '../../shared-theme/ColorModeSelect';
 import {  GitHubIcon } from '../../components/CustomIcons';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-
-const Card = styled(MuiCard)(({ theme }) => ({
+import api from '../../api/axiosInstance';const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   alignSelf: 'center',
@@ -106,21 +105,38 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
   };
   const navigate = useNavigate();
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); // Prevent default form behavior
-  
-    if (!validateInputs()) return; // Validate fields before submission
-  
-    const data = new FormData(event.currentTarget);
-  
-    const user = {
-      name: data.get('name') || 'Guest',
-      email: data.get('email'),
-    };
-    localStorage.setItem('user', JSON.stringify(user));
-  
-    navigate('/signin');
+ const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  event.preventDefault();
+
+  if (!validateInputs()) return;
+
+  const data = new FormData(event.currentTarget);
+
+  const payload = {
+    username: data.get("name"),
+    email: data.get("email"),
+    password: data.get("password"),
   };
+
+  try {
+const res = await api.post('/api/auth/signup', payload);
+    console.log("✅ Signup success:", res.data);
+    navigate("/signin");
+  } catch (err: any) {
+    const msg = err.response?.data?.detail || "Signup failed";
+    if (msg.toLowerCase().includes("email")) {
+      setEmailError(true);
+      setEmailErrorMessage(msg);
+    } else if (msg.toLowerCase().includes("name")) {
+      setNameError(true);
+      setNameErrorMessage(msg);
+    } else {
+      setPasswordError(true);
+      setPasswordErrorMessage(msg);
+    }
+  }
+};
+
 
   return (
     <AppTheme {...props}>
