@@ -3,7 +3,6 @@ import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Drawer, { drawerClasses } from '@mui/material/Drawer';
 import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
 import MenuButton from '../dash/MenuButton';
@@ -45,9 +44,7 @@ export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobilePro
               src="/static/images/avatar/7.jpg"
               sx={{ width: 24, height: 24 }}
             />
-            <Typography component="p" variant="h6">
-              Riley Carter
-            </Typography>
+            
           </Stack>
           <MenuButton showBadge>
             <NotificationsRoundedIcon />

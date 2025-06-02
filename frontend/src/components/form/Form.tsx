@@ -6,34 +6,38 @@ import Grid from '@mui/material/Grid';
 import ColorModeIconDropdown from '../../shared-theme/ColorModeIconDropdown';
 import Fields from '../../components/form/Fields';
 import { useNavigate } from 'react-router-dom';
-
+import api from '../../api/axiosInstance'; 
 const steps = ['Fill Form'];
 
 export default function Form(props: { disableCustomTheme?: boolean }) {
   const [activeStep, setActiveStep] = React.useState(0);
   const navigate = useNavigate();
 
-  const handleNext = () => {
-    if (activeStep === 0) {
-      const projectName = (document.getElementById('project-name') as HTMLInputElement).value;
-      const githubUrl = (document.getElementById('github-url') as HTMLInputElement).value;
-      const token = (document.getElementById('token') as HTMLInputElement).value;
-  
-      const projectData = {
-        title: projectName,
-        github_url: githubUrl,
-        token: token,
-      };
-  
-      const existing = JSON.parse(localStorage.getItem('projects') || '[]');
-      existing.push(projectData);
-      localStorage.setItem('projects', JSON.stringify(existing));
-  
-      navigate('/dashboard');
-    } else {
-      setActiveStep((prev) => prev + 1);
+ // ✅ Make sure this exists
+
+const handleNext = async () => {
+  if (activeStep === 0) {
+    const projectName = (document.getElementById('project-name') as HTMLInputElement).value;
+    const githubUrl = (document.getElementById('github-url') as HTMLInputElement).value;
+    const githubToken = (document.getElementById('token') as HTMLInputElement).value;
+
+    const projectData = {
+      title: projectName,
+      github_url: githubUrl,
+      token: githubToken,
+    };
+    try {
+      const res = await api.post("/api/projects/", projectData); // token auto attached in axiosInstance
+      console.log("✅ Project submitted:", res.data);
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("❌ Failed to deploy project:", error);
     }
-  };
+  } else {
+    setActiveStep((prev) => prev + 1);
+  }
+};
+
   
 
   return (
