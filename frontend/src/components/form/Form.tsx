@@ -19,19 +19,41 @@ const handleNext = async () => {
   if (activeStep === 0) {
     const projectName = (document.getElementById('project-name') as HTMLInputElement).value;
     const githubUrl = (document.getElementById('github-url') as HTMLInputElement).value;
-    const githubToken = (document.getElementById('token') as HTMLInputElement).value;
+    const githubToken = (document.getElementById('github_token') as HTMLInputElement)?.value || localStorage.getItem("github_token");
+    const username = "username";
 
     const projectData = {
       title: projectName,
       github_url: githubUrl,
       token: githubToken,
     };
+
     try {
-      const res = await api.post("/api/projects/", projectData); // token auto attached in axiosInstance
-      console.log("✅ Project submitted:", res.data);
+      // ✅ Submit project info to /api/projects/
+      const projectRes = await api.post("/api/projects/", projectData);
+      console.log("✅ Project submitted:", projectRes.data);
+
+      // ✅ Then, deploy the app using /api/deploy
+      if (!githubToken || !username) {
+        console.error("❌ Missing GitHub credentials in localStorage or form");
+        return;
+      }
+
+      const deployData = {
+        username: username,
+        github_token: githubToken,
+        user_repo_url: githubUrl,
+        app_name: projectName,
+      };
+
+      const deployRes = await api.post("/deploy", deployData);
+      console.log("🚀 App deployed:", deployRes.data);
+
+      // ✅ Navigate only after both succeed
       navigate("/dashboard");
+
     } catch (error) {
-      console.error("❌ Failed to deploy project:", error);
+      console.error("❌ Error during project submission or deployment:", error);
     }
   } else {
     setActiveStep((prev) => prev + 1);

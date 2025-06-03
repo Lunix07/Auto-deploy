@@ -195,9 +195,15 @@ const res = await api.post('/api/auth/login', credentials);
           </Box>
           <Divider>or</Divider>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Button fullWidth variant="outlined" onClick={() => alert('Sign in with GitHub')} startIcon={<GitHubIcon />}>
-              Sign in with GitHub
-            </Button>
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={() => window.location.href = 'http://localhost:8000/api/auth/github-login'}
+            startIcon={<GitHubIcon />}
+          >
+            Sign in with GitHub
+          </Button>
+
             <Typography sx={{ textAlign: 'center' }}>
               Don&apos;t have an account?{' '}
               <Link component={RouterLink} to="/signup" variant="body2" sx={{ alignSelf: 'center' }}>

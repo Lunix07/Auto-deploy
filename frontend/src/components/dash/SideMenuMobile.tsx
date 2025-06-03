@@ -57,9 +57,26 @@ export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobilePro
         </Stack>
         
         <Stack sx={{ p: 2 }}>
-          <Button variant="outlined" fullWidth startIcon={<LogoutRoundedIcon />}>
-            Logout
-          </Button>
+         <Button
+  variant="outlined"
+  fullWidth
+  startIcon={<LogoutRoundedIcon />}
+  onClick={() => {
+    // Clear tokens
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+
+    // Optional: clear sessionStorage or cookies if you use them
+    sessionStorage.clear();
+
+    // Redirect to signin
+    window.location.href = '/signin';
+  }}
+>
+  Logout
+</Button>
+
+
         </Stack>
       </Stack>
     </Drawer>
